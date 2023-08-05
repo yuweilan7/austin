@@ -65,6 +65,27 @@ public class ReceiverStart {
     /**
      * 给每个Receiver对象的consumer方法 @KafkaListener赋值相应的groupId
      */
+    /**
+     * 为什么能找到对应的?
+     *
+     * 这个问题涉及到Spring中的SCOPE_PROTOTYPE和ConcurrentKafkaListenerContainerFactory的工作原理。
+     *
+     * 首先，这里的@Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)注解表示每次从Spring容器中获取Receiver bean时，
+     * 都会创建一个新的实例。而在ReceiverStart.init()方法中，对Receiver bean的获取循环了groupIds.size()次，
+     * 即每一个groupId对应一个新的Receiver实例。这些Receiver实例在Spring的IoC容器中都是独立的。
+     *
+     * 然后，对于每一个Receiver实例，其consumer方法上的@KafkaListener注解将它注册为Kafka的一个消息监听器。
+     * 这个注解的groupId属性是在ReceiverStart.groupIdEnhancer()方法中设置的，每个Receiver实例都有一个唯一的groupId。
+     *
+     * 现在我们来看一下ConcurrentKafkaListenerContainerFactory。这个类的实例负责创建Kafka消息监听器的容器。
+     * 在ReceiverStart.filterContainerFactory()方法中，我们为这个工厂设置了一个过滤策略，只处理标签匹配的消息。
+     * 由于每个Receiver实例都由自己的groupId，因此每个Receiver实例处理的消息是与其groupId匹配的消息。
+     *
+     * 综上，通过组合使用SCOPE_PROTOTYPE、@KafkaListener以及ConcurrentKafkaListenerContainerFactory，
+     * 我们为每一个groupId创建了一个Receiver实例，并设置了只处理与自己groupId匹配的消息。因此，即使消息进来，
+     * 也只有对应groupId的Receiver实例会处理。
+     * @return
+     */
     @Bean
     public static KafkaListenerAnnotationBeanPostProcessor.AnnotationEnhancer groupIdEnhancer() {
         return (attrs, element) -> {

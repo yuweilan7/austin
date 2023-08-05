@@ -26,6 +26,13 @@ public class SimpleLimitService extends AbstractLimitService {
     @Autowired
     private RedisUtils redisUtils;
 
+    /**
+     * 将通用逻辑封装在抽象类中，并通过接口来定义业务方法
+     * @param service  去重器对象
+     * @param taskInfo
+     * @param param    去重参数
+     * @return
+     */
     @Override
     public Set<String> limitFilter(AbstractDeduplicationService service, TaskInfo taskInfo, DeduplicationParam param) {
         Set<String> filterReceiver = new HashSet<>(taskInfo.getReceiver().size());
